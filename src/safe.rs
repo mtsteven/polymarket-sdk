@@ -622,11 +622,14 @@ pub fn pack_signature_for_safe_tx(signature: &str) -> Result<String> {
     // - 0/1 → 31/32 (raw recovery id + 31)
     // - 27/28 → 31/32 (standard Ethereum + 4)
     let v = match original_v {
-        0 | 1 => original_v + 31,   // 0→31, 1→32 (raw k256 recovery id)
-        27 | 28 => original_v + 4,  // 27→31, 28→32 (standard Ethereum)
-        31 | 32 => original_v,      // Already in Safe eth_sign format
+        0 | 1 => original_v + 31,  // 0→31, 1→32 (raw k256 recovery id)
+        27 | 28 => original_v + 4, // 27→31, 28→32 (standard Ethereum)
+        31 | 32 => original_v,     // Already in Safe eth_sign format
         _ => {
-            warn!(v = original_v, "Unexpected v value in signature, using as-is");
+            warn!(
+                v = original_v,
+                "Unexpected v value in signature, using as-is"
+            );
             original_v
         }
     };
@@ -2073,7 +2076,9 @@ impl RelayerClient {
             USDC_CONTRACT_ADDRESS
         };
 
-        let current = self.check_erc20_allowance(token, proxy_wallet, spender).await?;
+        let current = self
+            .check_erc20_allowance(token, proxy_wallet, spender)
+            .await?;
         let sufficient = current >= required_amount;
 
         debug!(
@@ -2096,11 +2101,7 @@ impl RelayerClient {
     ///
     /// # Returns
     /// Whether the operator is approved
-    pub async fn check_ctf_approval(
-        &self,
-        proxy_wallet: &str,
-        operator: &str,
-    ) -> Result<bool> {
+    pub async fn check_ctf_approval(&self, proxy_wallet: &str, operator: &str) -> Result<bool> {
         let approved = self
             .check_erc1155_approval(CONDITIONAL_TOKENS_ADDRESS, proxy_wallet, operator)
             .await?;
@@ -2134,7 +2135,12 @@ impl RelayerClient {
 
         // Check USDC allowance for exchange
         let (usdc_approved, usdc_allowance) = self
-            .check_usdc_allowance(proxy_wallet, targets.usdc_spender, U256::from(1), use_native_usdc)
+            .check_usdc_allowance(
+                proxy_wallet,
+                targets.usdc_spender,
+                U256::from(1),
+                use_native_usdc,
+            )
             .await?;
 
         // Check CTF approval for exchange

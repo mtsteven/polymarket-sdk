@@ -83,24 +83,23 @@ pub mod prelude;
 // Core Re-exports (always available)
 // ============================================================================
 
-pub use core::{Error, Endpoints, PolymarketError, Result};
 pub use core::{
-    AuthErrorKind, MarketDataErrorKind, OrderErrorKind, StreamErrorKind,
-    CLOB_API_BASE, CLOB_WSS_BASE, DATA_API_BASE, GAMMA_API_BASE,
-    PROFILES_API_BASE, RELAYER_API_BASE, RTDS_WSS_BASE,
+    AuthErrorKind, MarketDataErrorKind, OrderErrorKind, StreamErrorKind, CLOB_API_BASE,
+    CLOB_WSS_BASE, DATA_API_BASE, GAMMA_API_BASE, PROFILES_API_BASE, RELAYER_API_BASE,
+    RTDS_WSS_BASE,
 };
+pub use core::{Endpoints, Error, PolymarketError, Result};
 
 // ============================================================================
 // Type Re-exports (always available)
 // ============================================================================
 
 pub use types::{
-    ApiCredentials, BiggestWinner, BiggestWinnersQuery, BookLevel, ClosedPosition,
-    ConnectionStats, DataApiActivity, DataApiPosition, DataApiTrade, DataApiTrader,
-    Event, EventMarket, LeaderboardEntry, ListParams, Market, MarketOrderArgs,
-    NewOrder, NewOrderData, OrderOptions, OrderType, PaginationParams, SearchEvent,
-    SearchProfile, SearchRequest, SearchResponse, SearchTag, Side, SignedOrderRequest,
-    Tag, Token, TraderProfile,
+    ApiCredentials, BiggestWinner, BiggestWinnersQuery, BookLevel, ClosedPosition, ConnectionStats,
+    DataApiActivity, DataApiPosition, DataApiTrade, DataApiTrader, Event, EventMarket,
+    LeaderboardEntry, ListParams, Market, MarketOrderArgs, NewOrder, NewOrderData, OrderOptions,
+    OrderType, PaginationParams, SearchEvent, SearchProfile, SearchRequest, SearchResponse,
+    SearchTag, Side, SignedOrderRequest, Tag, Token, TraderProfile,
 };
 
 #[cfg(feature = "auth")]
@@ -125,8 +124,8 @@ pub use auth::{
 #[cfg(feature = "client")]
 pub use client::{
     ApiKeyResponse, CancelResponse, ClobClient, ClobConfig, DataClient, DataConfig,
-    DeriveApiKeyResponse, GammaClient, GammaConfig, OpenOrder, OrderResponse,
-    ProfilesClient, ProfilesConfig,
+    DeriveApiKeyResponse, GammaClient, GammaConfig, OpenOrder, OrderResponse, ProfilesClient,
+    ProfilesConfig,
 };
 
 // ============================================================================
@@ -142,11 +141,10 @@ pub use order::{get_contract_config, ContractConfig, OrderArgs, OrderBuilder, Si
 
 #[cfg(feature = "stream")]
 pub use stream::{
-    LastTradeMessage, MarketBook, MarketStream, MockStream, PriceChangeEntry,
-    PriceChangeMessage, RtdsClient, RtdsConfig, RtdsEvent, RtdsMessage,
-    RtdsSubscription, RtdsSubscriptionMessage, StreamManager, StreamMessage,
-    StreamStats, Subscription, TickSizeChangeMessage, TradePayload, WebSocketStream,
-    WssAuth, WssMarketClient, WssMarketEvent, WssStats, WssSubscription,
+    LastTradeMessage, MarketBook, MarketStream, MockStream, PriceChangeEntry, PriceChangeMessage,
+    RtdsClient, RtdsConfig, RtdsEvent, RtdsMessage, RtdsSubscription, RtdsSubscriptionMessage,
+    StreamManager, StreamMessage, StreamStats, Subscription, TickSizeChangeMessage, TradePayload,
+    WebSocketStream, WssAuth, WssMarketClient, WssMarketEvent, WssStats, WssSubscription,
     WssUserClient, WssUserEvent, WssUserOrderMessage, WssUserTradeMessage,
 };
 
@@ -164,8 +162,8 @@ pub use safe::{
     SafeCreateTypedData, SafeTxDomain, SafeTxMessage, SafeTxTypedData, SafeTxTypes,
     SignatureParams, TransactionReceipt, TransactionRequest, TransactionState, TransactionType,
     CONDITIONAL_TOKENS_ADDRESS, CTF_EXCHANGE_ADDRESS, EXCHANGE_ADDRESS,
-    NATIVE_USDC_CONTRACT_ADDRESS, NEG_RISK_CTF_EXCHANGE_ADDRESS, SAFE_FACTORY,
-    SAFE_INIT_CODE_HASH, USDC_CONTRACT_ADDRESS,
+    NATIVE_USDC_CONTRACT_ADDRESS, NEG_RISK_CTF_EXCHANGE_ADDRESS, SAFE_FACTORY, SAFE_INIT_CODE_HASH,
+    USDC_CONTRACT_ADDRESS,
 };
 
 // ============================================================================

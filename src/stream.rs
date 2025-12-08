@@ -12,13 +12,13 @@ pub mod rtds;
 // RTDS exports
 pub use rtds::{
     MarketStream, MockStream, RtdsClient, RtdsConfig, RtdsEvent, RtdsMessage, RtdsSubscription,
-    RtdsSubscriptionMessage, StreamManager, StreamMessage, StreamStats, Subscription,
-    TradePayload, WebSocketStream, WssAuth, WssSubscription,
+    RtdsSubscriptionMessage, StreamManager, StreamMessage, StreamStats, Subscription, TradePayload,
+    WebSocketStream, WssAuth, WssSubscription,
 };
 
 // CLOB WebSocket exports
 pub use clob::{
     LastTradeMessage, MarketBook, OrderSummary, PriceChangeEntry, PriceChangeMessage,
-    TickSizeChangeMessage, WssMarketClient, WssMarketEvent, WssStats, WssUserClient,
-    WssUserEvent, WssUserOrderMessage, WssUserTradeMessage,
+    TickSizeChangeMessage, WssMarketClient, WssMarketEvent, WssStats, WssUserClient, WssUserEvent,
+    WssUserOrderMessage, WssUserTradeMessage,
 };

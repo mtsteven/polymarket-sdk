@@ -641,12 +641,7 @@ impl ClobClient {
 
         // 1. Create standard L2 headers (POLY_*) using pre-serialized body string and shared timestamp
         let mut headers = create_l2_headers_with_body_string(
-            &address,
-            api_creds,
-            "POST",
-            endpoint,
-            &body_str,
-            timestamp,
+            &address, api_creds, "POST", endpoint, &body_str, timestamp,
         )?;
 
         // 2. Inject Builder headers (POLY_BUILDER_*) if Builder signer is configured
@@ -655,7 +650,12 @@ impl ClobClient {
             info!("Builder signer configured, generating Builder headers");
 
             let builder_headers = builder
-                .create_builder_header_payload("POST", endpoint, Some(&body_str), Some(timestamp as i64))
+                .create_builder_header_payload(
+                    "POST",
+                    endpoint,
+                    Some(&body_str),
+                    Some(timestamp as i64),
+                )
                 .map_err(|e| PolymarketError::internal(format!("Builder header error: {}", e)))?;
 
             info!(
@@ -682,7 +682,9 @@ impl ClobClient {
 
         // CRITICAL FIX: Use pre-serialized body string instead of re-serializing with .json()
         // This ensures HTTP body matches exactly what was used for HMAC calculation
-        let mut req_builder = self.client.post(&url)
+        let mut req_builder = self
+            .client
+            .post(&url)
             .header("Content-Type", "application/json")
             .body(body_str.clone());
         for (key, value) in &headers {
@@ -705,7 +707,10 @@ impl ClobClient {
         if !result.success {
             return Err(PolymarketError::api(
                 400,
-                format!("Order rejected: {} (status: {})", result.error_msg, result.status),
+                format!(
+                    "Order rejected: {} (status: {})",
+                    result.error_msg, result.status
+                ),
             ));
         }
 
@@ -946,10 +951,7 @@ impl ClobClient {
         }
 
         let result: FeeRateResponse = response.json().await.map_err(|e| {
-            PolymarketError::parse_with_source(
-                format!("Failed to parse fee_rate response: {e}"),
-                e,
-            )
+            PolymarketError::parse_with_source(format!("Failed to parse fee_rate response: {e}"), e)
         })?;
 
         debug!(token_id = %token_id, fee_rate_bps = %result.base_fee, "Got fee rate");

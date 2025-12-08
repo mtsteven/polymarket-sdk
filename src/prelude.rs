@@ -29,8 +29,8 @@ pub use crate::types::{
 // Clients (if enabled)
 #[cfg(feature = "client")]
 pub use crate::client::{
-    ClobClient, ClobConfig, DataClient, DataConfig, GammaClient, GammaConfig,
-    ProfilesClient, ProfilesConfig,
+    ClobClient, ClobConfig, DataClient, DataConfig, GammaClient, GammaConfig, ProfilesClient,
+    ProfilesConfig,
 };
 
 // Auth (if enabled)

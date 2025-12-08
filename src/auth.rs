@@ -22,9 +22,7 @@ mod builder;
 mod eip712;
 
 // Builder API (from polymarket-rs-sdk)
-pub use builder::{
-    build_builder_hmac_signature, BuilderApiKeyCreds, BuilderSigner, HmacSha256,
-};
+pub use builder::{build_builder_hmac_signature, BuilderApiKeyCreds, BuilderSigner, HmacSha256};
 
 // EIP-712 and HMAC signing
 pub use eip712::{

@@ -26,7 +26,10 @@ pub enum PolymarketError {
 
     /// Authentication/authorization errors
     #[error("Auth error: {message}")]
-    Auth { message: String, kind: AuthErrorKind },
+    Auth {
+        message: String,
+        kind: AuthErrorKind,
+    },
 
     /// Order-related errors
     #[error("Order error: {message}")]
@@ -63,7 +66,10 @@ pub enum PolymarketError {
 
     /// Timeout errors
     #[error("Timeout: operation timed out after {duration:?}")]
-    Timeout { duration: Duration, operation: String },
+    Timeout {
+        duration: Duration,
+        operation: String,
+    },
 
     /// Rate limiting errors
     #[error("Rate limit exceeded: {message}")]
