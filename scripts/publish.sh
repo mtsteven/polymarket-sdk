@@ -32,15 +32,23 @@ get_version() {
     grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/'
 }
 
-# Update version in Cargo.toml
+# Update version in Cargo.toml and commit
 bump_version() {
     local new_version=$1
     if [[ ! "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
         error "Invalid version format: $new_version (expected: x.y.z or x.y.z-suffix)"
     fi
 
+    local old_version=$(get_version)
     sed -i '' "s/^version = \".*\"/version = \"$new_version\"/" Cargo.toml
-    success "Version bumped to $new_version"
+
+    # Update Cargo.lock
+    cargo check --quiet 2>/dev/null || true
+
+    # Commit version bump
+    git add Cargo.toml Cargo.lock
+    git commit -m "chore: bump version to $new_version"
+    success "Version bumped from $old_version to $new_version (committed)"
 }
 
 # Pre-publish checks
@@ -142,8 +150,10 @@ do_publish() {
 }
 
 # Create git tag
+# Usage: create_tag [version] [--no-push]
 create_tag() {
-    local version=$(get_version)
+    local version="${1:-$(get_version)}"
+    local auto_push="${2:-yes}"  # Default to push after publish
     local tag="v$version"
 
     step "Creating git tag $tag"
@@ -154,11 +164,16 @@ create_tag() {
         git tag -a "$tag" -m "Release $tag"
         success "Created tag $tag"
 
-        read -p "Push tag to origin? (y/N) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if [[ "$auto_push" == "yes" ]]; then
             git push origin "$tag"
             success "Pushed tag $tag to origin"
+        else
+            read -p "Push tag to origin? (y/N) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                git push origin "$tag"
+                success "Pushed tag $tag to origin"
+            fi
         fi
     fi
 }
@@ -171,13 +186,15 @@ usage() {
     echo "  $0 check              Run all pre-publish checks"
     echo "  $0 publish            Run checks and publish to crates.io"
     echo "  $0 bump <version>     Bump version, run checks, and publish"
-    echo "  $0 tag                Create and push git tag for current version"
+    echo "  $0 tag [version]      Create and push git tag (default: current version)"
     echo ""
     echo "Examples:"
     echo "  $0 check              # Just run checks"
     echo "  $0 publish            # Check and publish current version"
     echo "  $0 bump 0.1.0         # Bump to 0.1.0, check, and publish"
     echo "  $0 bump 0.1.0-beta.1  # Bump to pre-release version"
+    echo "  $0 tag                # Tag current version from Cargo.toml"
+    echo "  $0 tag 0.1.0          # Tag specific version"
     echo ""
     echo "Current version: $(get_version)"
 }
@@ -202,7 +219,7 @@ case "${1:-}" in
         create_tag
         ;;
     tag)
-        create_tag
+        create_tag "${2:-}" "no"  # Manual tag: prompt for push
         ;;
     -h|--help|help)
         usage
