@@ -742,12 +742,20 @@ impl ClobClient {
         Ok(credentials)
     }
 
-    /// Submit an order
+    /// Submit an order with specified order type
     ///
     /// Requires API credentials to be set via `with_api_credentials`.
+    /// 
+    /// # Arguments
+    /// * `order` - The signed order request
+    /// * `order_type` - The order type (GTC, FOK, GTD, FAK)
+    ///   - GTC (Good-Till-Cancelled): Rests in orderbook until filled or cancelled
+    ///   - FOK (Fill-Or-Kill): Must fill entirely immediately or cancels
+    ///   - GTD (Good-Till-Date): Rests until expiration date
+    ///   - FAK (Fill-And-Kill): Fills what's available immediately, cancels rest
     #[instrument(skip(self, order))]
-    pub async fn submit_order(&self, order: &SignedOrderRequest) -> Result<OrderResponse> {
-        use crate::types::{NewOrder, OrderType};
+    pub async fn submit_order_with_type(&self, order: &SignedOrderRequest, order_type: crate::types::OrderType) -> Result<OrderResponse> {
+        use crate::types::NewOrder;
 
         self.wait_for_rate_limit().await;
 
@@ -762,7 +770,7 @@ impl ClobClient {
         // - Use api_key as owner (NOT wallet address) - matches TypeScript SDK behavior
         // - Wrap order data in nested structure with orderType and deferExec
         let new_order =
-            NewOrder::from_signed_order(order, &api_creds.api_key, OrderType::GTC, false);
+            NewOrder::from_signed_order(order, &api_creds.api_key, order_type, false);
 
         // CRITICAL FIX: Serialize JSON ONCE and reuse for all operations
         // This ensures L2 HMAC, Builder HMAC, and HTTP body all use identical JSON
@@ -867,6 +875,26 @@ impl ClobClient {
         );
 
         Ok(result)
+    }
+
+    /// Submit an order (default: GTC - Good-Till-Cancelled)
+    ///
+    /// Requires API credentials to be set via `with_api_credentials`.
+    /// For other order types, use `submit_order_with_type`.
+    #[instrument(skip(self, order))]
+    pub async fn submit_order(&self, order: &SignedOrderRequest) -> Result<OrderResponse> {
+        self.submit_order_with_type(order, crate::types::OrderType::GTC).await
+    }
+
+    /// Submit a Fill-Or-Kill (FOK) order
+    ///
+    /// FOK orders must fill entirely and immediately, or they are cancelled.
+    /// This is useful for atomic operations where partial fills are not acceptable.
+    ///
+    /// Requires API credentials to be set via `with_api_credentials`.
+    #[instrument(skip(self, order))]
+    pub async fn submit_order_fok(&self, order: &SignedOrderRequest) -> Result<OrderResponse> {
+        self.submit_order_with_type(order, crate::types::OrderType::FOK).await
     }
 
     /// Get open orders for the signer
