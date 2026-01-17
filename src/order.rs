@@ -263,35 +263,18 @@ impl OrderBuilder {
 
         match side {
             Side::Buy => {
-                // For BUY orders:
-                // - Taker amount (tokens received) = size, max 4 decimals
-                // - Maker amount (USDC spent) = size * price, max 2 decimals
                 let raw_taker_amt = size.round_dp_with_strategy(round_config.size, ToZero);
                 let raw_maker_amt = raw_taker_amt * raw_price;
-                
-                // Polymarket API requires:
-                // - Maker amount (USDC) max 2 decimals
-                // - Taker amount (tokens) max 4 decimals
-                let raw_maker_amt = raw_maker_amt.round_dp_with_strategy(2, ToZero);
-                let raw_taker_amt = raw_taker_amt.round_dp_with_strategy(4, ToZero);
-                
+                let raw_maker_amt = self.fix_amount_rounding(raw_maker_amt, round_config);
                 Ok((
                     decimal_to_token_units(raw_maker_amt)?,
                     decimal_to_token_units(raw_taker_amt)?,
                 ))
             }
             Side::Sell => {
-                // For SELL orders:
-                // - Maker amount (tokens offered) = size, max 4 decimals
-                // - Taker amount (USDC received) = size * price, max 2 decimals
                 let raw_maker_amt = size.round_dp_with_strategy(round_config.size, ToZero);
                 let raw_taker_amt = raw_maker_amt * raw_price;
-                
-                // Polymarket API requires:
-                // - Maker amount (tokens) max 4 decimals
-                // - Taker amount (USDC) max 2 decimals
-                let raw_maker_amt = raw_maker_amt.round_dp_with_strategy(4, ToZero);
-                let raw_taker_amt = raw_taker_amt.round_dp_with_strategy(2, ToZero);
+                let raw_taker_amt = self.fix_amount_rounding(raw_taker_amt, round_config);
 
                 Ok((
                     decimal_to_token_units(raw_maker_amt)?,
@@ -308,19 +291,11 @@ impl OrderBuilder {
         price: Decimal,
         round_config: &RoundConfig,
     ) -> Result<(u64, u64)> {
-        // Market orders are always BUY orders
-        // - Maker amount (USDC spent) = amount, max 2 decimals
-        // - Taker amount (tokens received) = amount / price, max 4 decimals
         let raw_maker_amt = amount.round_dp_with_strategy(round_config.size, ToZero);
         let raw_price = price.round_dp_with_strategy(round_config.price, MidpointTowardZero);
 
         let raw_taker_amt = raw_maker_amt / raw_price;
-        
-        // Polymarket API requires:
-        // - Maker amount (USDC) max 2 decimals
-        // - Taker amount (tokens) max 4 decimals
-        let raw_maker_amt = raw_maker_amt.round_dp_with_strategy(2, ToZero);
-        let raw_taker_amt = raw_taker_amt.round_dp_with_strategy(4, ToZero);
+        let raw_taker_amt = self.fix_amount_rounding(raw_taker_amt, round_config);
 
         Ok((
             decimal_to_token_units(raw_maker_amt)?,
