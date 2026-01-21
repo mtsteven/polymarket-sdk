@@ -155,9 +155,10 @@ pub use stream::{
 #[cfg(feature = "safe")]
 pub use safe::{
     build_ctf_approve_typed_data, build_safe_create_typed_data, build_safe_tx_request,
-    build_token_approve_typed_data, build_usdc_transfer_typed_data, compute_safe_tx_digest,
-    derive_safe_address, encode_erc1155_set_approval_for_all, encode_erc20_allowance_query,
-    encode_erc20_approve, encode_erc20_transfer, pack_signature, pack_signature_for_safe_tx,
+    build_split_position_typed_data, build_token_approve_typed_data, build_usdc_transfer_typed_data,
+    compute_safe_tx_digest, derive_safe_address, encode_ctf_split_position,
+    encode_erc1155_set_approval_for_all, encode_erc20_allowance_query, encode_erc20_approve,
+    encode_erc20_transfer, encode_neg_risk_split_position, pack_signature, pack_signature_for_safe_tx,
     ApprovalStatus, DeploySafeResponse, NonceType, RelayerClient, RelayerConfig,
     SafeCreateTypedData, SafeTxDomain, SafeTxMessage, SafeTxTypedData, SafeTxTypes,
     SignatureParams, TransactionReceipt, TransactionRequest, TransactionState, TransactionType,
@@ -222,9 +223,11 @@ pub mod relayer {
 
     pub use crate::safe::{
         build_ctf_approve_typed_data, build_safe_create_typed_data, build_safe_tx_request,
-        build_token_approve_typed_data, build_usdc_transfer_typed_data, compute_safe_tx_digest,
-        derive_safe_address, encode_erc1155_set_approval_for_all, encode_erc20_allowance_query,
-        encode_erc20_approve, encode_erc20_transfer, pack_signature, pack_signature_for_safe_tx,
+        build_split_position_typed_data, build_token_approve_typed_data,
+        build_usdc_transfer_typed_data, compute_safe_tx_digest, derive_safe_address,
+        encode_ctf_split_position, encode_erc1155_set_approval_for_all,
+        encode_erc20_allowance_query, encode_erc20_approve, encode_erc20_transfer,
+        encode_neg_risk_split_position, pack_signature, pack_signature_for_safe_tx,
         ApprovalStatus, BuilderApiCredentials, DeploySafeResponse, NonceType, RelayerClient,
         RelayerConfig, SafeCreateTypedData, SafeTxDomain, SafeTxMessage, SafeTxTypedData,
         SafeTxTypes, SignatureParams, TransactionReceipt, TransactionRequest, TransactionState,

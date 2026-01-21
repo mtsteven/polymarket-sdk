@@ -897,6 +897,21 @@ impl ClobClient {
         self.submit_order_with_type(order, crate::types::OrderType::FOK).await
     }
 
+    /// Submit a Fill-And-Kill (FAK) order
+    ///
+    /// FAK orders fill whatever quantity is available immediately at the limit price
+    /// or better, then cancel any remaining unfilled portion. Unlike FOK, FAK allows
+    /// partial fills.
+    ///
+    /// This is useful for arbitrage strategies where you want to capture whatever
+    /// liquidity is available, even if not the full requested size.
+    ///
+    /// Requires API credentials to be set via `with_api_credentials`.
+    #[instrument(skip(self, order))]
+    pub async fn submit_order_fak(&self, order: &SignedOrderRequest) -> Result<OrderResponse> {
+        self.submit_order_with_type(order, crate::types::OrderType::FAK).await
+    }
+
     /// Get open orders for the signer
     #[instrument(skip(self))]
     pub async fn get_open_orders(&self) -> Result<Vec<OpenOrder>> {
@@ -935,6 +950,61 @@ impl ClobClient {
         debug!(count = %paginated.data.len(), "Retrieved open orders");
 
         Ok(paginated.data)
+    }
+
+    /// Get a specific order by ID
+    ///
+    /// Queries the CLOB API to retrieve details about a specific order,
+    /// including its current status (matched, live, delayed, cancelled, etc.)
+    ///
+    /// # Arguments
+    /// * `order_id` - The order ID to query
+    ///
+    /// # Returns
+    /// * `Ok(Some(OpenOrder))` - Order found
+    /// * `Ok(None)` - Order not found (404)
+    /// * `Err` - API error
+    #[instrument(skip(self))]
+    pub async fn get_order(&self, order_id: &str) -> Result<Option<OpenOrder>> {
+        self.wait_for_rate_limit().await;
+
+        let api_creds = self.api_credentials.as_ref().ok_or_else(|| {
+            PolymarketError::config("API credentials required for querying orders")
+        })?;
+
+        let endpoint = format!("/data/order/{}", order_id);
+        let url = format!("{}{}", self.config.base_url, endpoint);
+
+        let headers = create_l2_headers::<String>(&self.signer, api_creds, "GET", &endpoint, None)?;
+
+        debug!(order_id = %order_id, "Getting order by ID");
+
+        let mut req_builder = self.client.get(&url);
+        for (key, value) in &headers {
+            req_builder = req_builder.header(*key, value);
+        }
+
+        let response = req_builder.send().await?;
+        let status = response.status();
+
+        // 404 means order not found - not an error, just return None
+        if status.as_u16() == 404 {
+            debug!(order_id = %order_id, "Order not found (404)");
+            return Ok(None);
+        }
+
+        if !status.is_success() {
+            let body = response.text().await.unwrap_or_default();
+            return Err(PolymarketError::api(status.as_u16(), body));
+        }
+
+        let order: OpenOrder = response.json().await.map_err(|e| {
+            PolymarketError::parse_with_source(format!("Failed to parse order response: {e}"), e)
+        })?;
+
+        debug!(order_id = %order_id, status = %order.status, "Retrieved order");
+
+        Ok(Some(order))
     }
 
     /// Cancel orders by IDs

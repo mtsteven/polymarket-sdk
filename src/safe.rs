@@ -2236,6 +2236,12 @@ const ERC1155_SET_APPROVAL_FOR_ALL_SELECTOR: [u8; 4] = [0xa2, 0x2c, 0xb4, 0x65];
 /// ERC1155 isApprovedForAll function selector: keccak256("isApprovedForAll(address,address)")[:4]
 const ERC1155_IS_APPROVED_FOR_ALL_SELECTOR: [u8; 4] = [0xe9, 0x85, 0xe9, 0xc5];
 
+/// CTF splitPosition function selector: keccak256("splitPosition(address,bytes32,bytes32,uint256[],uint256)")[:4]
+const CTF_SPLIT_POSITION_SELECTOR: [u8; 4] = [0x72, 0xce, 0x42, 0x75];
+
+/// NegRiskAdapter splitPosition function selector: keccak256("splitPosition(address,bytes32,uint256)")[:4]
+const NEG_RISK_SPLIT_POSITION_SELECTOR: [u8; 4] = [0xdd, 0x14, 0x25, 0x62];
+
 /// Safe Transaction typed data for EIP-712 signing
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SafeTxTypedData {
@@ -2504,6 +2510,128 @@ pub fn encode_erc1155_is_approved_for_all(owner: &str, operator: &str) -> Result
     Ok(format!("0x{}", hex::encode(&calldata)))
 }
 
+/// Encode calldata for CTF splitPosition (ConditionalTokens contract)
+///
+/// # Arguments
+/// * `collateral_token` - USDC contract address
+/// * `condition_id` - Market condition ID (32 bytes hex)
+/// * `partition` - Outcome partition (e.g., [1, 2] for binary)
+/// * `amount` - Amount in raw units (USDC has 6 decimals)
+///
+/// # Returns
+/// Hex-encoded calldata for splitPosition
+pub fn encode_ctf_split_position(
+    collateral_token: &str,
+    condition_id: &str,
+    partition: &[u64],
+    amount: u128,
+) -> Result<String> {
+    let collateral_addr: Address = collateral_token
+        .parse()
+        .map_err(|e| PolymarketError::validation(format!("Invalid collateral address: {e}")))?;
+
+    // Parse condition_id - remove 0x prefix if present
+    let condition_id_clean = condition_id.strip_prefix("0x").unwrap_or(condition_id);
+    let condition_bytes = hex::decode(condition_id_clean)
+        .map_err(|e| PolymarketError::validation(format!("Invalid condition_id hex: {e}")))?;
+    if condition_bytes.len() != 32 {
+        return Err(PolymarketError::validation(format!(
+            "condition_id must be 32 bytes, got {}",
+            condition_bytes.len()
+        )));
+    }
+
+    // Build calldata
+    // splitPosition(address collateralToken, bytes32 parentCollectionId, bytes32 conditionId, uint256[] partition, uint256 amount)
+    let mut calldata = Vec::with_capacity(4 + 32 * 5 + 32 * partition.len());
+
+    // Function selector
+    calldata.extend_from_slice(&CTF_SPLIT_POSITION_SELECTOR);
+
+    // collateralToken (address, padded to 32 bytes)
+    let mut collateral_bytes = [0u8; 32];
+    collateral_bytes[12..].copy_from_slice(collateral_addr.as_slice());
+    calldata.extend_from_slice(&collateral_bytes);
+
+    // parentCollectionId (bytes32) - always 0 for top-level split
+    calldata.extend_from_slice(&[0u8; 32]);
+
+    // conditionId (bytes32)
+    calldata.extend_from_slice(&condition_bytes);
+
+    // partition offset (points to where array data starts: 5 * 32 = 160 = 0xa0)
+    let mut offset_bytes = [0u8; 32];
+    offset_bytes[31] = 0xa0;
+    calldata.extend_from_slice(&offset_bytes);
+
+    // amount (uint256)
+    let amount_u256 = U256::from(amount);
+    calldata.extend_from_slice(&amount_u256.to_be_bytes::<32>());
+
+    // partition array: length + elements
+    let mut len_bytes = [0u8; 32];
+    len_bytes[31] = partition.len() as u8;
+    calldata.extend_from_slice(&len_bytes);
+
+    for &p in partition {
+        let p_u256 = U256::from(p);
+        calldata.extend_from_slice(&p_u256.to_be_bytes::<32>());
+    }
+
+    Ok(format!("0x{}", hex::encode(&calldata)))
+}
+
+/// Encode calldata for NegRiskAdapter splitPosition
+///
+/// # Arguments
+/// * `collateral_token` - USDC contract address
+/// * `condition_id` - Market condition ID (32 bytes hex)
+/// * `amount` - Amount in raw units (USDC has 6 decimals)
+///
+/// # Returns
+/// Hex-encoded calldata for splitPosition
+pub fn encode_neg_risk_split_position(
+    collateral_token: &str,
+    condition_id: &str,
+    amount: u128,
+) -> Result<String> {
+    let collateral_addr: Address = collateral_token
+        .parse()
+        .map_err(|e| PolymarketError::validation(format!("Invalid collateral address: {e}")))?;
+
+    // Parse condition_id
+    let condition_id_clean = condition_id.strip_prefix("0x").unwrap_or(condition_id);
+    let condition_bytes = hex::decode(condition_id_clean)
+        .map_err(|e| PolymarketError::validation(format!("Invalid condition_id hex: {e}")))?;
+    if condition_bytes.len() != 32 {
+        return Err(PolymarketError::validation(format!(
+            "condition_id must be 32 bytes, got {}",
+            condition_bytes.len()
+        )));
+    }
+
+    // Build calldata
+    // splitPosition(address collateralToken, bytes32 conditionId, uint256 amount)
+    let mut calldata = Vec::with_capacity(4 + 32 * 3);
+
+    // Function selector
+    calldata.extend_from_slice(&NEG_RISK_SPLIT_POSITION_SELECTOR);
+
+    // collateralToken (address, padded to 32 bytes)
+    let mut collateral_bytes = [0u8; 32];
+    collateral_bytes[12..].copy_from_slice(collateral_addr.as_slice());
+    calldata.extend_from_slice(&collateral_bytes);
+
+    // conditionId (bytes32)
+    calldata.extend_from_slice(&condition_bytes);
+
+    // amount (uint256)
+    let amount_u256 = U256::from(amount);
+    calldata.extend_from_slice(&amount_u256.to_be_bytes::<32>());
+
+    Ok(format!("0x{}", hex::encode(&calldata)))
+}
+
 /// Build SafeTx typed data for USDC transfer
 ///
 /// # Arguments
@@ -2676,6 +2804,77 @@ pub fn build_ctf_approve_typed_data(
         },
         message: SafeTxMessage {
             to: CONDITIONAL_TOKENS_ADDRESS.to_string(),
+            value: "0".to_string(),
+            data: calldata,
+            operation: 0, // Call
+            safe_tx_gas: "0".to_string(),
+            base_gas: "0".to_string(),
+            gas_price: "0".to_string(),
+            gas_token: "0x0000000000000000000000000000000000000000".to_string(),
+            refund_receiver: "0x0000000000000000000000000000000000000000".to_string(),
+            nonce: nonce.to_string(),
+        },
+        primary_type: "SafeTx".to_string(),
+        types: SafeTxTypes::default(),
+    })
+}
+
+/// Build EIP-712 typed data for splitPosition (minting outcome tokens)
+///
+/// Splits USDC collateral into outcome tokens for a prediction market.
+/// For standard markets, calls ConditionalTokens contract.
+/// For neg-risk markets, calls NegRiskAdapter contract.
+///
+/// # Arguments
+/// * `proxy_wallet` - Safe proxy wallet address
+/// * `usdc_contract` - USDC contract address (collateral)
+/// * `condition_id` - Market condition ID (32 bytes hex)
+/// * `amount_usdc` - Amount in USDC (human readable, e.g., 100.0 = $100)
+/// * `outcome_count` - Number of outcomes (2 for binary, more for multi-outcome)
+/// * `nonce` - Safe nonce from Relayer API
+/// * `neg_risk` - Whether this is a neg-risk market
+/// * `chain_id` - Chain ID (default: 137 for Polygon)
+///
+/// # Returns
+/// EIP-712 typed data ready for user signature
+pub fn build_split_position_typed_data(
+    proxy_wallet: &str,
+    usdc_contract: &str,
+    condition_id: &str,
+    amount_usdc: f64,
+    outcome_count: usize,
+    nonce: u64,
+    neg_risk: bool,
+    chain_id: Option<u64>,
+) -> Result<SafeTxTypedData> {
+    // Validate proxy wallet address
+    let _: Address = proxy_wallet
+        .parse()
+        .map_err(|e| PolymarketError::validation(format!("Invalid proxy wallet address: {e}")))?;
+
+    // Convert USDC amount to raw units (6 decimals)
+    let amount_raw = (amount_usdc * 1_000_000.0) as u128;
+
+    // Build calldata based on market type
+    let (target_contract, calldata) = if neg_risk {
+        // NegRiskAdapter has a simpler interface
+        let calldata = encode_neg_risk_split_position(usdc_contract, condition_id, amount_raw)?;
+        (NEG_RISK_ADAPTER_ADDRESS, calldata)
+    } else {
+        // ConditionalTokens requires partition array
+        // Generate partition for outcome_count outcomes: [1, 2, 4, 8, ...]
+        let partition: Vec<u64> = (0..outcome_count).map(|i| 1u64 << i).collect();
+        let calldata = encode_ctf_split_position(usdc_contract, condition_id, &partition, amount_raw)?;
+        (CONDITIONAL_TOKENS_ADDRESS, calldata)
+    };
+
+    Ok(SafeTxTypedData {
+        domain: SafeTxDomain {
+            chain_id: chain_id.unwrap_or(137),
+            verifying_contract: proxy_wallet.to_string(),
+        },
+        message: SafeTxMessage {
+            to: target_contract.to_string(),
             value: "0".to_string(),
             data: calldata,
             operation: 0, // Call
